@@ -1,0 +1,105 @@
+body {
+  background:#000;
+  margin:0;
+  padding:0;
+  overflow: hidden;
+}
+
+@-webkit-keyframes flippy {
+  0% {
+    -webkit-transform: scale(1,1) rotateY(0deg);
+  }
+
+
+  /*20% {
+    -webkit-transform: scale(0.85,0.85) rotateY(0deg);
+  }
+
+  30% {
+    -webkit-transform: scale(0.85,0.85) rotateY(0deg);
+  }*/
+
+  50% {
+    -webkit-transform: scale(0.85,0.85) rotateY(90deg);
+  }
+
+  100% {
+    -webkit-transform: scale(0.85,0.85) rotateY(90deg);
+  }
+
+}
+
+@-webkit-keyframes otherflippy {
+  0% {
+    -webkit-transform: scale(0.9,0.9) rotateY(90deg);
+  }
+
+  50% {
+    -webkit-transform: scale(0.9,0.9) rotateY(90deg);
+  }
+
+  100% {
+    -webkit-transform: scale(1,1) rotateY(0deg);
+  }
+
+
+}
+
+#glasspane {
+
+
+  div.glass {
+    position: absolute;
+    top:-1%;
+    left:-1%;
+    //padding:20px;
+    width:102%;
+    height:102%;
+
+    background: url("subw.gif") -50px -50px;
+    background-size: 150%;
+    overflow: hidden;
+    background-clip: padding-box;
+   // border: solid 2px rgba(255,255,255,0.3);
+    border-radius:0.8em;
+    box-shadow: inset 1px 1px 1px 1px rgba(255,255,255,0.4),
+                inset -1px -1px 1px 1px rgba(0,0,0,0.3),
+                0px 0px 1px 3px rgba(255,255,255,0.3)
+                ;
+
+    -webkit-backface-visibility: hidden;
+
+  }
+
+  div.otherglass {
+    border-radius:0.8em;
+    background:blue;
+    width:92%;
+    height:92%;
+    left:4%;
+    top:4%;
+    position: absolute;
+    -webkit-transform: rotateY(90deg);
+    box-shadow: inset 1px 1px 1px 1px rgba(255,255,255,0.4),
+                inset -1px -1px 1px 1px rgba(0,0,0,0.3),
+                0px 0px 0px 3px rgba(255,255,255,0.25)
+                ;
+  }
+
+  &.clicked div.glass {
+      -webkit-animation-name: flippy;
+      -webkit-animation-duration: 300ms;
+      -webkit-animation-iteration-count: 1;
+      -webkit-animation-timing-function: linear;
+      -webkit-animation-fill-mode: forwards;
+    }
+
+  &.clicked div.otherglass {
+      -webkit-animation-name: otherflippy;
+      -webkit-animation-duration: 300ms;
+      -webkit-animation-iteration-count: 1;
+      -webkit-animation-timing-function: linear;
+      -webkit-animation-fill-mode: forwards;
+    }
+
+}

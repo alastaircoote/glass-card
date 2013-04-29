@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link rel="stylesheet" type="text/css" href="style.css"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black" />  
+
+    </head>
+    <body>
+        <div id="glasspane">
+            <div class="glass" id="glasstarget"></div>
+            <div class="otherglass"></div>
+        </div>
+        <script>
+            document.getElementById("glasspane").ontouchstart = function() {
+                if (document.getElementById("glasspane").className.indexOf("clicked") > -1) {
+                    document.getElementById("glasspane").className = "glass";
+                } else {
+                    document.getElementById("glasspane").className += " clicked";
+                }
+                
+            }
+            
+        </script>
+    </body>
+</html>
