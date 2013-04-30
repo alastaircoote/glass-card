@@ -3,6 +3,8 @@ body {
   margin:0;
   padding:0;
   overflow: hidden;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
 }
 
 @-webkit-keyframes flippy {
@@ -46,60 +48,30 @@ body {
 }
 
 #glasspane {
-
-
-  div.glass {
-    position: absolute;
-    top:-1%;
-    left:-1%;
-    //padding:20px;
-    width:102%;
-    height:102%;
-
-    background: url("subw.gif") -50px -50px;
-    background-size: 150%;
-    overflow: hidden;
-    background-clip: padding-box;
-   // border: solid 2px rgba(255,255,255,0.3);
-    border-radius:0.8em;
-    box-shadow: inset 1px 1px 1px 1px rgba(255,255,255,0.4),
-                inset -1px -1px 1px 1px rgba(0,0,0,0.3),
-                0px 0px 1px 3px rgba(255,255,255,0.3)
-                ;
-
-    -webkit-backface-visibility: hidden;
-
-  }
+  -webkit-perspective: 1600px;
+  position:absolute;
+  height:100%;
+  width:100%;
 
   div.otherglass {
+    -webkit-transform-style: preserve-3d;
     border-radius:0.8em;
-    background:blue;
+    background:#999;
     width:92%;
     height:92%;
     left:4%;
     top:4%;
     position: absolute;
-    -webkit-transform: rotateY(90deg);
+    //-webkit-transform: rotateY(90deg);
     box-shadow: inset 1px 1px 1px 1px rgba(255,255,255,0.4),
                 inset -1px -1px 1px 1px rgba(0,0,0,0.3),
                 0px 0px 0px 3px rgba(255,255,255,0.25)
                 ;
+
+    &.animated {
+      -webkit-transition: -webkit-transform 0.5s;
+    }
   }
 
-  &.clicked div.glass {
-      -webkit-animation-name: flippy;
-      -webkit-animation-duration: 300ms;
-      -webkit-animation-iteration-count: 1;
-      -webkit-animation-timing-function: linear;
-      -webkit-animation-fill-mode: forwards;
-    }
-
-  &.clicked div.otherglass {
-      -webkit-animation-name: otherflippy;
-      -webkit-animation-duration: 300ms;
-      -webkit-animation-iteration-count: 1;
-      -webkit-animation-timing-function: linear;
-      -webkit-animation-fill-mode: forwards;
-    }
 
 }

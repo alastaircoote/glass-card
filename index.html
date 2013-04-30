@@ -9,19 +9,12 @@
     </head>
     <body>
         <div id="glasspane">
-            <div class="glass" id="glasstarget"></div>
-            <div class="otherglass"></div>
+            <div class="otherglass" id="cardtarget"></div>
         </div>
+        <script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
+        <script src="card.js"></script>
         <script>
-            document.getElementById("glasspane").ontouchstart = function() {
-                if (document.getElementById("glasspane").className.indexOf("clicked") > -1) {
-                    document.getElementById("glasspane").className = "glass";
-                } else {
-                    document.getElementById("glasspane").className += " clicked";
-                }
-                
-            }
-            
+           
         </script>
     </body>
 </html>
