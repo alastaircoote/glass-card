@@ -8,13 +8,24 @@
 
     </head>
     <body>
-        <div id="glasspane">
-            <div class="otherglass" id="cardtarget"></div>
+        <div id="panelayer">
+            <div class="glasspane">
+                <div class="side front">
+                    <div class="pane"><div class="content"><p>This is the front card! Wow.</p><p>Swipe me.</p></div></div>
+                </div>
+                <div class="side back">
+                    <div class="pane"><div class="content"><p>This is the back card. Crazy, huh?</p></div></div>
+                </div>
+            </div>
         </div>
         <script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
         <script src="card.js"></script>
+        <script src="http://www.ismytwitterpasswordsecure.com/js/bigtext.js"></script>
         <script>
-           
+
+            $("body").css("font-size", $(window).width() / 100 + "px")
+                
         </script>
+       <script>document.write('<script src="http://' + (location.host || 'localhost').split(':')[0] + ':35729/livereload.js?snipver=1"></' + 'script>')</script>
     </body>
 </html>

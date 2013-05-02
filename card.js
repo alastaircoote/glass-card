@@ -31,6 +31,8 @@
       this.el.on("touchstart", this.touchstart);
       this.el.on("touchmove", this.touchmove);
       this.el.on("touchend", this.touchend);
+      this.frontEl = $("div.front", this.el);
+      this.backEl = $("div.back", this.el);
     }
 
     Card.prototype._translateTouchCoordinates = function(e) {
@@ -43,14 +45,26 @@
     };
 
     Card.prototype.touchstart = function(e) {
-      this.el.removeClass("animated");
+      e.preventDefault();
+      e.stopPropagation();
+      this.frontEl.removeClass("animated");
+      this.backEl.removeClass("animated");
+      this.frontEl.css({
+        "-webkit-transition-duration": ""
+      });
+      this.backEl.css({
+        "-webkit-transition-duration": ""
+      });
       this.startCoords = this._translateTouchCoordinates(e);
       this.startTime = Date.now();
+      this.lastMoveTime = this.startTime;
       return this.currentState = state.DECIDING;
     };
 
     Card.prototype.touchmove = function(e) {
       var xDiff, yDiff;
+      e.preventDefault();
+      e.stopPropagation();
       this.currentPos = this._translateTouchCoordinates(e);
       if (this.currentState === state.DECIDING) {
         xDiff = Math.abs(this.currentPos.x - this.startCoords.x);
@@ -63,8 +77,7 @@
         } else {
           this.moveMode = direction.VERTICAL;
         }
-        this.currentState = state.TRACKING;
-        return this.el.html(this.moveMode);
+        return this.currentState = state.TRACKING;
       }
     };
 
@@ -81,7 +94,8 @@
       acceleration = distance / time;
       return {
         acceleration: acceleration,
-        distance: distance
+        distance: distance,
+        time: time
       };
     };
 
@@ -94,13 +108,14 @@
     __extends(VerticalSwipeCard, _super);
 
     function VerticalSwipeCard() {
+      this.touchend = __bind(this.touchend, this);
+
       this.touchmove = __bind(this.touchmove, this);
       return VerticalSwipeCard.__super__.constructor.apply(this, arguments);
     }
 
     VerticalSwipeCard.prototype.touchmove = function(e) {
       var cardHeight, percentAcross, topPos;
-      e.preventDefault();
       VerticalSwipeCard.__super__.touchmove.call(this, e);
       if (this.currentState === state.TRACKING && this.moveMode === direction.VERTICAL) {
         cardHeight = this.el.height();
@@ -108,6 +123,14 @@
         topPos = $(window).height() * percentAcross;
         return this.el.css("-webkit-transform", "translate3d(0," + (0 - topPos) + "px,0)");
       }
+    };
+
+    VerticalSwipeCard.prototype.touchend = function(e) {
+      if (this.moveMode === direction.VERTICAL) {
+        console.log("gotmytouchend");
+        this.el.css("-webkit-transform", "");
+      }
+      return VerticalSwipeCard.__super__.touchend.call(this, e);
     };
 
     return VerticalSwipeCard;
@@ -119,48 +142,116 @@
     __extends(RotateCard, _super);
 
     function RotateCard() {
+      this.postAnimate = __bind(this.postAnimate, this);
+
       this.touchend = __bind(this.touchend, this);
 
       this.touchmove = __bind(this.touchmove, this);
+
+      this.touchstart = __bind(this.touchstart, this);
       return RotateCard.__super__.constructor.apply(this, arguments);
     }
 
+    RotateCard.prototype.touchstart = function(e) {
+      RotateCard.__super__.touchstart.call(this, e);
+      return this.backEl.css("display", "block");
+    };
+
     RotateCard.prototype.touchmove = function(e) {
-      var cardWidth, percentAcross, rotateAngle;
+      var backAngle, cardWidth, frontAngle, multiplier;
       e.preventDefault();
       RotateCard.__super__.touchmove.call(this, e);
       if (this.currentState === state.TRACKING && this.moveMode === direction.HORIZONTAL) {
         cardWidth = this.el.width();
-        percentAcross = (this.startCoords.x - this.currentPos.x) / cardWidth;
-        rotateAngle = -180 * percentAcross;
-        if (rotateAngle < -180) {
-          rotateAngle = -180;
+        this.percentAcross = (this.startCoords.x - this.currentPos.x) / cardWidth;
+        multiplier = this.percentAcross < 0 ? -1 : 1;
+        this.percentAcross = Math.abs(this.percentAcross);
+        if (this.percentAcross <= 0.5) {
+          frontAngle = -180 * this.percentAcross;
+          if (frontAngle < -180) {
+            frontAngle = -180;
+          }
+          frontAngle = frontAngle * multiplier;
+          backAngle = 90 * multiplier;
+        } else {
+          frontAngle = -90 * multiplier;
+          backAngle = ((-180 * this.percentAcross) + 180) * multiplier;
         }
-        return this.el.css("-webkit-transform", "rotate3d(0,1,0," + rotateAngle + "deg)");
+        this.frontEl.css("-webkit-transform", "rotate3d(0,1,0," + frontAngle + "deg)");
+        return this.backEl.css("-webkit-transform", "rotate3d(0,1,0," + backAngle + "deg)");
       }
     };
 
     RotateCard.prototype.touchend = function(e) {
-      var cardWidth, stats;
-      if (!this.moveMode === direction.HORIZONTAL) {
+      var animateBack, cardWidth, percentLeftForFront, stats, timeForAllAtAccelerationRate, timeForBack, timeForFront,
+        _this = this;
+      RotateCard.__super__.touchend.call(this, e);
+      console.log(this.moveMode);
+      if (this.moveMode !== direction.HORIZONTAL) {
         return;
       }
+      console.log("processing", this.moveMode, direction.HORIZONTAL);
       stats = RotateCard.__super__.touchend.call(this, e);
-      this.el.html(stats.acceleration);
       cardWidth = this.el.width();
-      if (stats.acceleration < 1 && stats.distance < cardWidth / 2) {
-        this.el.addClass("animated");
-        return this.el.css("-webkit-transform", "");
-      } else {
-        this.el.addClass("animated");
-        return this.el.css("-webkit-transform", "rotate3d(0,1,0,-180deg)");
+      timeForAllAtAccelerationRate = stats.time * (1 / this.percentAcross);
+      if (stats.acceleration < 1 && this.percentAcross <= 0.5) {
+        console.log(this.frontEl[0]);
+        this.frontEl.addClass("animated");
+        return this.frontEl.css("-webkit-transform", "rotate3d(0,1,0,0deg)");
+      } else if (stats.acceleration < 1 || this.percentAcross > 0.5) {
+        this.backEl.addClass("animated");
+        this.backEl.css({
+          "-webkit-transform": "rotate3d(0,1,0,0deg)"
+        });
+        return this.postAnimate();
+      } else if (stats.acceleration > 1) {
+        console.log("going weird");
+        percentLeftForFront = 0.5 - this.percentAcross;
+        timeForFront = (timeForAllAtAccelerationRate * percentLeftForFront) / 1000;
+        timeForBack = (timeForAllAtAccelerationRate * 0.5) / 1000;
+        animateBack = function() {
+          _this.frontEl.off("webkitTransitionEnd", animateBack);
+          _this.backEl.addClass("animated");
+          _this.backEl.css({
+            "-webkit-transition-duration": "" + timeForBack + "s",
+            "-webkit-transform": "rotate3d(0,1,0,0deg)"
+          });
+          return _this.postAnimate();
+        };
+        this.frontEl.on("webkitTransitionEnd", animateBack);
+        this.frontEl.addClass("animated");
+        return this.frontEl.css({
+          "-webkit-transition-duration": "" + timeForFront + "s",
+          "-webkit-transform": "rotate3d(0,1,0,90deg)"
+        });
       }
+    };
+
+    RotateCard.prototype.postAnimate = function() {
+      var newBack;
+      console.log("switching");
+      newBack = this.frontEl;
+      this.frontEl = this.backEl;
+      this.backEl = newBack;
+      return this.backEl.css("display", "none");
     };
 
     return RotateCard;
 
   })(VerticalSwipeCard);
 
-  new RotateCard($("#cardtarget"));
+  $(document).on("touchmove", function(e) {
+    return e.preventDefault();
+  });
+
+  $(document).on("touchstart", function(e) {
+    return e.preventDefault();
+  });
+
+  $(document).on("scroll", function() {
+    return console.log("scrolly");
+  });
+
+  new RotateCard($(".glasspane"));
 
 }).call(this);
