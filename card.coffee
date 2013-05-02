@@ -10,18 +10,27 @@ direction =
 class Card
     _decideRadius = 5
     constructor: (@el) ->
-        @el.on "touchstart", @touchstart
-        @el.on "touchmove", @touchmove
-        @el.on "touchend", @touchend
+        @el.on "touchstart mousedown", @touchstart
+        @el.on "touchmove mousemove", @touchmove
+        @el.on "touchend mouseup", @touchend
 
         @frontEl = $("div.front",@el)
         @backEl = $("div.back",@el)
 
 
-    _translateTouchCoordinates: (e) ->
+    _translateTouchCoordinates: (e) =>
         # only support one finger touch for now
+        #if e.originalEvent.touches.length > 1 then return null
 
-        touch = e.originalEvent.targetTouches[0]
+        if @touchId
+            for t in e.originalEvent.touches
+                if t.identifier == @touchId
+                    touch = t
+                    break
+        else
+            touch = e.originalEvent.touches?[0]
+
+        @touchId = touch.identifier
         return {
             x: touch.pageX - touch.target.offsetLeft
             y: touch.pageY - touch.target.offsetTop
@@ -30,7 +39,8 @@ class Card
     touchstart: (e) =>
         e.preventDefault();
         e.stopPropagation();
-        
+        if @touchId
+            return false
         # Reset attributes
 
         @frontEl.removeClass "animated"
@@ -42,6 +52,7 @@ class Card
         @startTime = Date.now()
         @lastMoveTime = @startTime
         @currentState = state.DECIDING
+        return true
 
     touchmove: (e) =>
         e.preventDefault();
@@ -63,7 +74,8 @@ class Card
             #@el.html(@moveMode)
 
     touchend: (e) =>
-
+        if e.originalEvent.touches.length > 0 then return false
+        @touchId = null
         endTime = Date.now()
         distance = 0
         if @moveMode == direction.HORIZONTAL
@@ -77,23 +89,28 @@ class Card
 
 class VerticalSwipeCard extends Card
     touchmove: (e) =>
-        super(e)
+        if !super(e) then return
+
         if @currentState == state.TRACKING && @moveMode == direction.VERTICAL
             cardHeight = @el.height()
             percentAcross = (@startCoords.y - @currentPos.y) / cardHeight
             topPos = $(window).height() * percentAcross
             @el.css "-webkit-transform", "translate3d(0,#{0-topPos}px,0)"
     touchend: (e) =>
+        res = super(e)
+        if !res then return false
         if @moveMode == direction.VERTICAL
             console.log "gotmytouchend"
             @el.css "-webkit-transform", ""
-        return super(e)
+        return res
 
 
 class RotateCard extends VerticalSwipeCard
     touchstart: (e) =>
         super(e)
         @backEl.css "display", "block"
+        @frontEl.off "webkitTransitionEnd", @delayedAnimateComplete
+        @backEl.off "webkitTransitionEnd", @delayedAnimateComplete
     touchmove: (e) =>
         e.preventDefault()
         super(e)
@@ -117,7 +134,7 @@ class RotateCard extends VerticalSwipeCard
             @backEl.css "-webkit-transform", "rotate3d(0,1,0,#{backAngle}deg)"
 
     touchend: (e) =>
-        super(e)
+        if !super(e) then return false
         console.log @moveMode
         if @moveMode != direction.HORIZONTAL then return
         console.log "processing", @moveMode, direction.HORIZONTAL 
@@ -127,11 +144,11 @@ class RotateCard extends VerticalSwipeCard
         
         timeForAllAtAccelerationRate = stats.time * (1/@percentAcross)
 
-        if stats.acceleration < 1 && @percentAcross <= 0.5
+        if stats.acceleration < 0.8 && @percentAcross <= 0.5
             console.log @frontEl[0]
             @frontEl.addClass "animated"
             @frontEl.css "-webkit-transform", "rotate3d(0,1,0,0deg)"
-        else if stats.acceleration < 1 || @percentAcross > 0.5
+        else if stats.acceleration < 0.8 || @percentAcross > 0.5
 
             #remainingTime = (timeForAllAtAccelerationRate * (1 - @percentAcross)) / 1000
 
@@ -145,32 +162,28 @@ class RotateCard extends VerticalSwipeCard
 
             @postAnimate()
 
-        else if stats.acceleration > 1
+        else if stats.acceleration >= 0.8
 
             # things get complex here. If we have high acceleration but haven't reached half way.
             console.log "going weird"
             percentLeftForFront = 0.5 - @percentAcross
             timeForFront = (timeForAllAtAccelerationRate * percentLeftForFront) / 1000
-            timeForBack = (timeForAllAtAccelerationRate * 0.5) / 1000
+            @timeForBack = (timeForAllAtAccelerationRate * 0.5) / 1000
 
-            animateBack = () =>
-                @frontEl.off "webkitTransitionEnd", animateBack
-                @backEl.addClass "animated"
-                @backEl.css
-                    "-webkit-transition-duration": "#{timeForBack}s"
-                    "-webkit-transform": "rotate3d(0,1,0,0deg)"
-                @postAnimate()
-
-            @frontEl.on "webkitTransitionEnd", animateBack
+            @frontEl.on "webkitTransitionEnd", @delayedAnimateComplete
 
             @frontEl.addClass "animated"
             @frontEl.css
                 "-webkit-transition-duration": "#{timeForFront}s"
                 "-webkit-transform": "rotate3d(0,1,0,90deg)"
 
-            
-        
-        
+    delayedAnimateComplete: () =>
+        @frontEl.off "webkitTransitionEnd", @delayedAnimateComplete
+        @backEl.addClass "animated"
+        @backEl.css
+            "-webkit-transition-duration": "#{@timeForBack}s"
+            "-webkit-transform": "rotate3d(0,1,0,0deg)"
+        @postAnimate()
 
     postAnimate: () =>
         console.log "switching"
