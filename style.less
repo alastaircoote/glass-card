@@ -20,16 +20,22 @@ body {
   position: absolute;
 }
 
+
+
 .glasspane {
   font-family: "League Gothic";
   @radius: 3em;
 
-  
+  -webkit-transform:translate3d(0,0,0);
   position:absolute;
   width:92%;
   height:92%;
   left:4%;
   top:4%;
+
+  &.animated, div.animated {
+      -webkit-transition: -webkit-transform 0.5s;
+    }
   
 
   div.side {
@@ -50,9 +56,7 @@ body {
     
     
 
-    &.animated {
-      -webkit-transition: -webkit-transform 0.5s;
-    }
+    
 
     &.back {
       //display:none;
