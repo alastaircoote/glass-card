@@ -49,7 +49,7 @@ class Card
 
 
         @el.css "-webkit-transition-duration": ""
-        @el.removeClass "animated"       
+        @el.removeClass "animated"
         @frontEl.removeClass "animated"
         @backEl.removeClass "animated"
         @frontEl.css "-webkit-transition-duration": ""
@@ -96,40 +96,62 @@ class Card
         return {acceleration,distance, time}
 
 class VerticalSwipeCard extends Card
+    constructor: (el) ->
+        super(el)
+        @panes = $("div.side",@el)
+
     touchmove: (e) =>
         super(e)
-       
+
         if @currentState == state.TRACKING && @moveMode == direction.VERTICAL
             cardHeight = @el.height()
             @percentVertical = (@startCoords.y - @currentPos.y) / cardHeight
             topPos = $(window).height() * @percentVertical
-            @el.css "-webkit-transform", "translate3d(0,#{0-topPos}px,0)"
+            @panes.css "-webkit-transform", "translate3d(0,#{0-topPos}px,0)"
     touchend: (e) =>
-        res = super(e)
-        if !res then return false
+        stats = super(e)
+        console.log stats
+        if !stats then return false
+
+        timeForAllAtAccelerationRate = stats.time * (1/Math.abs(@percentVertical))
         if @moveMode == direction.VERTICAL
             if @percentVertical > 0.5 || @percentVertical < -0.5
                 eventualTop = 110 * if @percentVertical < 0 then 1 else -1
 
-                timeForAllAtAccelerationRate = stats.time * (1/@percentVertical)
+                timeLeft = timeForAllAtAccelerationRate * (1-Math.abs(@percentVertical)) / 1000
 
+                @panes.css
+                    "-webkit-transform": "translate3d(0,#{eventualTop}%,0)"
+                    "-webkit-transition-duration": "#{timeLeft}s"
+            else if stats.acceleration > 0.8
+                timeLeft = timeForAllAtAccelerationRate * (1-Math.abs(@percentVertical)) / 1000
+                eventualTop = 110 * if @percentVertical < 0 then 1 else -1
+                @panes.css
+                    "-webkit-transform": "translate3d(0,#{eventualTop}%,0)"
+                    "-webkit-transition-duration": "#{timeLeft}s"
 
-                @el.css "-webkit-transform", "translate3d(0,#{eventualTop}%,0)"
-            else 
-                @el.css "-webkit-transform", ""
-        return res
+            else
+                @panes.css
+                    "-webkit-transform": "translate3d(0,0%,0)"
+                    "-webkit-transition-duration": "0.2s"
+        return stats
 
 
 class RotateCard extends VerticalSwipeCard
     touchstart: (e) =>
         super(e)
-        @backEl.css "display", "block"
         @frontEl.off "webkitTransitionEnd", @delayedAnimateComplete
         @backEl.off "webkitTransitionEnd", @delayedAnimateComplete
     touchmove: (e) =>
         e.preventDefault()
         super(e)
         if @currentState == state.TRACKING && @moveMode == direction.HORIZONTAL
+
+            if @backEl.css("display") == "none"
+                @backEl.css
+                    "display": "block"
+                    "-webkit-transform": "rotate3d(0,1,0,90deg)"
+
             cardWidth = @el.width()
             @percentAcross = (@startCoords.x - @currentPos.x) / cardWidth
             multiplier = if @percentAcross < 0 then -1 else 1
@@ -140,7 +162,7 @@ class RotateCard extends VerticalSwipeCard
                 if frontAngle < -180 then frontAngle = -180
                 frontAngle = frontAngle * multiplier
                 backAngle = 90 * multiplier
-            else
+             else
                 frontAngle = -90 * multiplier
                 backAngle = ((-180 * @percentAcross) + 180) * multiplier
                 #if backAngle < -180 then frontAngle = -180
@@ -188,6 +210,10 @@ class RotateCard extends VerticalSwipeCard
             frontAngleTo = if @swipeDirection == swipeDirection.RIGHTTOLEFT then -90 else 90
 
             @frontEl.addClass "animated"
+            @backEl.css
+                "display": "block"
+                "-webkit-transform": "rotate3d(0,1,0,90deg)"
+
             @frontEl.css
                 "-webkit-transition-duration": "#{timeForFront}s"
                 "-webkit-transform": "rotate3d(0,1,0,#{frontAngleTo}deg)"

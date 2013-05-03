@@ -139,11 +139,12 @@
 
     __extends(VerticalSwipeCard, _super);
 
-    function VerticalSwipeCard() {
+    function VerticalSwipeCard(el) {
       this.touchend = __bind(this.touchend, this);
 
       this.touchmove = __bind(this.touchmove, this);
-      return VerticalSwipeCard.__super__.constructor.apply(this, arguments);
+      VerticalSwipeCard.__super__.constructor.call(this, el);
+      this.panes = $("div.side", this.el);
     }
 
     VerticalSwipeCard.prototype.touchmove = function(e) {
@@ -153,26 +154,41 @@
         cardHeight = this.el.height();
         this.percentVertical = (this.startCoords.y - this.currentPos.y) / cardHeight;
         topPos = $(window).height() * this.percentVertical;
-        return this.el.css("-webkit-transform", "translate3d(0," + (0 - topPos) + "px,0)");
+        return this.panes.css("-webkit-transform", "translate3d(0," + (0 - topPos) + "px,0)");
       }
     };
 
     VerticalSwipeCard.prototype.touchend = function(e) {
-      var eventualTop, res, timeForAllAtAccelerationRate;
-      res = VerticalSwipeCard.__super__.touchend.call(this, e);
-      if (!res) {
+      var eventualTop, stats, timeForAllAtAccelerationRate, timeLeft;
+      stats = VerticalSwipeCard.__super__.touchend.call(this, e);
+      console.log(stats);
+      if (!stats) {
         return false;
       }
+      timeForAllAtAccelerationRate = stats.time * (1 / Math.abs(this.percentVertical));
       if (this.moveMode === direction.VERTICAL) {
         if (this.percentVertical > 0.5 || this.percentVertical < -0.5) {
           eventualTop = 110 * (this.percentVertical < 0 ? 1 : -1);
-          timeForAllAtAccelerationRate = stats.time * (1 / this.percentVertical);
-          this.el.css("-webkit-transform", "translate3d(0," + eventualTop + "%,0)");
+          timeLeft = timeForAllAtAccelerationRate * (1 - Math.abs(this.percentVertical)) / 1000;
+          this.panes.css({
+            "-webkit-transform": "translate3d(0," + eventualTop + "%,0)",
+            "-webkit-transition-duration": "" + timeLeft + "s"
+          });
+        } else if (stats.acceleration > 0.8) {
+          timeLeft = timeForAllAtAccelerationRate * (1 - Math.abs(this.percentVertical)) / 1000;
+          eventualTop = 110 * (this.percentVertical < 0 ? 1 : -1);
+          this.panes.css({
+            "-webkit-transform": "translate3d(0," + eventualTop + "%,0)",
+            "-webkit-transition-duration": "" + timeLeft + "s"
+          });
         } else {
-          this.el.css("-webkit-transform", "");
+          this.panes.css({
+            "-webkit-transform": "translate3d(0,0%,0)",
+            "-webkit-transition-duration": "0.2s"
+          });
         }
       }
-      return res;
+      return stats;
     };
 
     return VerticalSwipeCard;
@@ -198,7 +214,6 @@
 
     RotateCard.prototype.touchstart = function(e) {
       RotateCard.__super__.touchstart.call(this, e);
-      this.backEl.css("display", "block");
       this.frontEl.off("webkitTransitionEnd", this.delayedAnimateComplete);
       return this.backEl.off("webkitTransitionEnd", this.delayedAnimateComplete);
     };
@@ -208,6 +223,12 @@
       e.preventDefault();
       RotateCard.__super__.touchmove.call(this, e);
       if (this.currentState === state.TRACKING && this.moveMode === direction.HORIZONTAL) {
+        if (this.backEl.css("display") === "none") {
+          this.backEl.css({
+            "display": "block",
+            "-webkit-transform": "rotate3d(0,1,0,90deg)"
+          });
+        }
         cardWidth = this.el.width();
         this.percentAcross = (this.startCoords.x - this.currentPos.x) / cardWidth;
         multiplier = this.percentAcross < 0 ? -1 : 1;
@@ -257,6 +278,10 @@
         this.frontEl.on("webkitTransitionEnd", this.delayedAnimateComplete);
         frontAngleTo = this.swipeDirection === swipeDirection.RIGHTTOLEFT ? -90 : 90;
         this.frontEl.addClass("animated");
+        this.backEl.css({
+          "display": "block",
+          "-webkit-transform": "rotate3d(0,1,0,90deg)"
+        });
         return this.frontEl.css({
           "-webkit-transition-duration": "" + timeForFront + "s",
           "-webkit-transform": "rotate3d(0,1,0," + frontAngleTo + "deg)"
